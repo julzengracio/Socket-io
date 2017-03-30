@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>SocketIO Chat</title>
+        <link rel = "stylesheet" href = "style.css">
+        <script src = "https://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src = "/socket.io/socket.io.js"></script>
+        <script>
+            
+            $(function(){
+                //  Variable to store the click value
+                var clicked = 0;
+                
+                var socket = io();
+                
+                // Submit the value entered to the form to the server
+                $('form').submit(function(){
+                    socket.emit('chatMessage', $('#m').val());
+                    $('#m').val('');
+                    return false;
+                });
+                
+                // Take the message submitted to the server, retrieve that message and display it to the webpage.
+                socket.on('chatMessage', function(msg){
+                    $('#messages').append($('<li>').text(msg));
+                });
+                
+                // Take the unique ID for each client connected and append them to a button. Display this button to the webpage.
+                socket.on('clientLists', function(data){
+                    document.getElementById("clients").innerHTML = "";
+                    for (var i = 0 ; i < data.length; i++) {
+                        var btn = document.createElement("BUTTON");
+                        btn.onclick = clientButtonClicked;
+                        var textnode = document.createTextNode(data[i]);
+                        btn.appendChild(textnode);
+                        document.getElementById("clients").appendChild(btn);
+                    }
+                });
+                
+                // Function that runs when a client's button is clicked.
+                function clientButtonClicked(){
+                    // Pass the client ID and the message in the input box to the server.
+                    socket.emit('clientClicked', this.innerHTML, $('#m').val());
+                    $('#m').val('');
+                }
+            
+                // Retrieve the message sent to the server and display it to the webpage of the client of whose button is clicked. Also increments the client's clicked count.
+                socket.on('youWereClicked', function(msg){
+                    // Increment click count.
+                    clicked++;
+                    
+                    // Display a text message to the client.
+                    document.getElementById("buttonCount").innerHTML = "This client's button has been clicked " + clicked + " times.";
+                    
+                    // Send the message to the clicked client.
+                    $('#messages').append($('<li>').text(msg));
+                })
+            });
+            
+        </script>
+    </head>
+    
+    <body>
+        <h1>Socket IO Chat</h1>
+        <p id = "ClientID"></p>
+        <p id = "buttonCount">This client's button has been clicked 0 times.</p>
+        <div id = "clients"></div>
+        <ul id = "messages"></ul>
+        <form action = "">
+            <input id = "m" autocomplete="off" placeholder="Enter your message..." /><button>send</button>
+        </form>
+    </body>
+</html>
+
